@@ -24,7 +24,10 @@ import { SENSITIVE_ACTIONS } from "./types";
  */
 
 export interface ToolContext {
+  /** RLS-scoped client acting as the signed-in user. Used for all reads. */
   supabase: SupabaseClient<Database>;
+  /** Service-role client, used only for agent bookkeeping writes. */
+  admin: SupabaseClient<Database>;
   companyId: string;
   userId: string;
   conversationId: string | null;
@@ -376,7 +379,7 @@ const proposeAccountingAction: AgentTool = {
       .describe("Key/value lines showing precisely what will change"),
   }),
   execute: async (ctx, input) => {
-    const { data, error } = await ctx.supabase
+    const { data, error } = await ctx.admin
       .from("approval_requests")
       .insert({
         company_id: ctx.companyId,
