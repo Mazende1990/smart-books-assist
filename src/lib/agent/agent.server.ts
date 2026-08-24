@@ -2,7 +2,7 @@ import { generateText, stepCountIs, tool, type ModelMessage } from "ai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
-import { AGENT_MODEL, createLovableAiGatewayProvider, getGatewayApiKey } from "../ai-gateway.server";
+import { AGENT_MODEL, createGoogleAiProvider, getGoogleAiApiKey } from "../ai-gateway.server";
 import { AGENT_TOOLS, type ToolContext } from "./tools.server";
 import type { ToolCallSummary } from "./types";
 
@@ -152,9 +152,9 @@ export async function runAgent(args: RunAgentArgs): Promise<RunAgentResult> {
   ];
 
   try {
-    const gateway = createLovableAiGatewayProvider(getGatewayApiKey());
+    const google = createGoogleAiProvider(getGoogleAiApiKey());
     const result = await generateText({
-      model: gateway(AGENT_MODEL),
+      model: google(AGENT_MODEL),
       system: SYSTEM_PROMPT,
       messages,
       tools,
@@ -250,10 +250,9 @@ export function normalizeAiError(error: unknown): string {
       ? Number((error as { statusCode?: number }).statusCode)
       : undefined;
   if (status === 429) return "The AI assistant is rate limited right now. Please try again in a moment.";
-  if (status === 402)
-    return "The workspace is out of AI credits. Add credits in Lovable to keep using the assistant.";
-  if (status === 403) return "AI access is blocked by workspace policy. Contact the workspace admin.";
-  if (status === 401) return "The AI assistant is not configured correctly (missing API key).";
-  if (raw.includes("LOVABLE_API_KEY")) return raw;
+  if (status === 403) return "AI access is blocked by account policy. Contact the workspace admin.";
+  if (status === 401 || status === 400)
+    return "The AI assistant is not configured correctly (missing or invalid API key).";
+  if (raw.includes("GOOGLE_GENERATIVE_AI_API_KEY")) return raw;
   return `The AI assistant failed: ${raw}`;
 }
